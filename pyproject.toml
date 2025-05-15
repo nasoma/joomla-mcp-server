@@ -1,0 +1,13 @@
+[project]
+name = "joomlamcp"
+version = "0.1.0"
+description = "MCP Server to create articles on a Joomla website"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "black>=25.1.0",
+    "bleach>=6.2.0",
+    "httpx>=0.28.1",
+    "markdown>=3.8",
+    "mcp[cli]>=1.7.1",
+]
