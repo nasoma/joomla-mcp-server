@@ -8,7 +8,9 @@ import bleach
 
 mcp = FastMCP("Joomla Articles MCP", port=8001)
 
-JOOMLA_BASE_URL = os.getenv("JOOMLA_BASE_URL").rstrip("/")
+JOOMLA_BASE_URL = os.getenv(
+    "JOOMLA_BASE_URL", "https://default-joomla-site.com"
+).rstrip("/")
 BEARER_TOKEN = os.getenv("BEARER_TOKEN")
 
 JOOMLA_ARTICLES_API_URL = f"{JOOMLA_BASE_URL}/api/index.php/v1/content/articles"
