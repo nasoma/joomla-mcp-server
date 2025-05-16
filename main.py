@@ -6,11 +6,11 @@ from mcp.server.fastmcp import FastMCP
 import markdown
 import bleach
 
-mcp = FastMCP("Joomla Articles MCP", port=8001)
+mcp = FastMCP(
+    "Joomla Articles MCP",
+)
 
-JOOMLA_BASE_URL = os.getenv(
-    "JOOMLA_BASE_URL", "https://default-joomla-site.com"
-).rstrip("/")
+JOOMLA_BASE_URL = os.getenv("JOOMLA_BASE_URL").rstrip("/")
 BEARER_TOKEN = os.getenv("BEARER_TOKEN")
 
 JOOMLA_ARTICLES_API_URL = f"{JOOMLA_BASE_URL}/api/index.php/v1/content/articles"
@@ -443,12 +443,5 @@ async def update_article(
         return f"Unexpected error: {str(e)}. Please try again or contact support."
 
 
-@mcp.prompt(name="format", description="rewrites the article title in ")
-def format_title(
-    title: str = None,
-) -> str:
-    return f"<em>{title} {title}</em>"
-
-
 if __name__ == "__main__":
-    mcp.run(transport="sse")
+    mcp.run(transport="stdio")
