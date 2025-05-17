@@ -304,7 +304,6 @@ async def delete_article(article_id: int) -> str:
             "Authorization": f"Bearer {BEARER_TOKEN}",
         }
 
-        # Verify article exists and get its state
         async with httpx.AsyncClient() as client:
             response = await client.get(
                 f"{JOOMLA_ARTICLES_API_URL}/{article_id}", headers=headers
@@ -323,13 +322,11 @@ async def delete_article(article_id: int) -> str:
         except json.JSONDecodeError:
             return f"Failed to parse article data: Invalid JSON - {response.text}"
 
-        # Check if article is not in trashed state (-2); move to trashed if necessary
         if current_state != -2:
             trash_result = await manage_article_state(article_id, -2)
             if "Successfully updated" not in trash_result:
                 return f"Failed to move article to trashed state before deletion: {trash_result}"
 
-        # Perform deletion
         async with httpx.AsyncClient() as client:
             response = await client.delete(
                 f"{JOOMLA_ARTICLES_API_URL}/{article_id}", headers=headers
@@ -394,7 +391,6 @@ async def update_article(
             "Authorization": f"Bearer {BEARER_TOKEN}",
         }
 
-        # Verify article exists
         async with httpx.AsyncClient() as client:
             response = await client.get(
                 f"{JOOMLA_ARTICLES_API_URL}/{article_id}", headers=headers
@@ -412,7 +408,6 @@ async def update_article(
         except json.JSONDecodeError:
             return f"Failed to parse article data: Invalid JSON - {response.text}"
 
-        # Prepare payload with provided fields
         payload = {}
         if title:
             payload["title"] = title
@@ -432,7 +427,6 @@ async def update_article(
                 convert_text_to_html(fulltext) if convert_plain_text else fulltext
             )
 
-        # Perform update
         async with httpx.AsyncClient() as client:
             response = await client.patch(
                 f"{JOOMLA_ARTICLES_API_URL}/{article_id}", json=payload, headers=headers
