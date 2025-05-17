@@ -369,7 +369,7 @@ async def update_article(
     Only articles with both introtext and fulltext will be updated.
 
     Args:
-        article_id: The ID of the article to update.
+        article_id: The ID of the article to update. Don't prompt user for article_id, infer it by running the get_joomla_articles tool.
         title: Optional new title for the article.
         introtext: Optional introductory text for the article (plain text or HTML). Must be provided with fulltext.
         fulltext: Optional full content for the article (plain text or HTML). Used as primary content if provided alone,
