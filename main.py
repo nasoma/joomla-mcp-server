@@ -6,7 +6,7 @@ from mcp.server.fastmcp import FastMCP
 import markdown
 import bleach
 
-mcp = FastMCP("Joomla Articles MCP", port=10000)
+mcp = FastMCP("Joomla Articles MCP")
 
 JOOMLA_BASE_URL = os.getenv("JOOMLA_BASE_URL").rstrip("/")
 BEARER_TOKEN = os.getenv("BEARER_TOKEN")
@@ -458,4 +458,4 @@ async def update_article(
 
 
 if __name__ == "__main__":
-    mcp.run(transport="sse")
+    mcp.run(transport="stdio")
