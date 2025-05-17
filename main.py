@@ -352,14 +352,14 @@ async def delete_article(article_id: int) -> str:
 
 
 @mcp.tool()
-async def update_article(
+async def update_article_old(
     article_id: int,
     title: str = None,
     article_text: str = None,
     convert_plain_text: bool = True,
 ) -> str:
     """
-    Update an existing article on the Joomla website via its API. Allows updating the title and/or body.
+    Update an existing article on the Joomla website via its API. Allows updating the title and/or body. Before doing an update confirm the article's title and id are correct.
 
     Args:
         article_id: The ID of the article to update.
@@ -441,20 +441,110 @@ async def update_article(
         return f"Unexpected error: {str(e)}. Please try again or contact support."
 
 
-@mcp.prompt()
-def generate_meta_description(article_id: str) -> str:
+@mcp.tool()
+async def update_article(
+    article_id: int,
+    title: str = None,
+    introtext: str = None,
+    fulltext: str = None,
+    metadesc: str = None,
+    convert_plain_text: bool = True,
+) -> str:
     """
-    Generate meta description of an article given its article ID
+    Update an existing article on the Joomla website via its API. Allows updating the title, introtext, fulltext, and meta description. Provide both introtext and fulltext together for articles with separate introductory and main content, or provide only fulltext for articles where a single body of content is sufficient. Introtext alone is not sufficient and will be ignored unless accompanied by fulltext. Before updating, confirm the article's title and ID are correct.
 
     Args:
-        article_id: The ID of the existing article to check and update.
-
+        article_id: The ID of the article to update.
+        title: Optional new title for the article.
+        introtext: Optional introductory text for the article (plain text or HTML). Must be provided with fulltext.
+        fulltext: Optional full content for the article (plain text or HTML). Used as primary content if provided alone, or as main content if provided with introtext.
+        metadesc: Optional meta description for the article.
+        convert_plain_text: Whether to auto-convert plain text to HTML for introtext and fulltext (default: True).
 
     Returns:
         Result string indicating success or failure.
     """
+    try:
+        if not isinstance(article_id, int):
+            return "Error: Article ID must be an integer."
 
-    return f"Summarize the contents of the article whose id is {article_id} into a meta description of up to 160 characters."
+        if not any([title, introtext, fulltext, metadesc]):
+            return "Error: At least one of title, introtext, fulltext, or metadesc must be provided."
+
+        headers = {
+            "Accept": "application/vnd.api+json",
+            "Content-Type": "application/json",
+            "User-Agent": "JoomlaArticlesMCP/1.0",
+            "Authorization": f"Bearer {BEARER_TOKEN}",
+        }
+
+        # Verify article exists
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                f"{JOOMLA_ARTICLES_API_URL}/{article_id}", headers=headers
+            )
+
+        if response.status_code != 200:
+            return (
+                f"Failed to find article: HTTP {response.status_code} - {response.text}"
+            )
+
+        try:
+            data = json.loads(response.text)
+            article_data = data.get("data", {}).get("attributes", {})
+            current_title = article_data.get("title", "Unknown")
+        except json.JSONDecodeError:
+            return f"Failed to parse article data: Invalid JSON - {response.text}"
+
+        # Prepare payload with provided fields
+        payload = {}
+        if title:
+            payload["title"] = title
+            payload["alias"] = generate_alias(title)
+        if metadesc:
+            payload["metadesc"] = metadesc
+        if introtext:
+            payload["introtext"] = (
+                convert_text_to_html(introtext) if convert_plain_text else introtext
+            )
+            if fulltext:
+                payload["fulltext"] = (
+                    convert_text_to_html(fulltext) if convert_plain_text else fulltext
+                )
+        elif fulltext:
+            payload["articletext"] = (
+                convert_text_to_html(fulltext) if convert_plain_text else fulltext
+            )
+
+        # Perform update
+        async with httpx.AsyncClient() as client:
+            response = await client.patch(
+                f"{JOOMLA_ARTICLES_API_URL}/{article_id}", json=payload, headers=headers
+            )
+
+        if response.status_code in (200, 204):
+            updated_fields = []
+            if title:
+                updated_fields.append(f"title to '{title}'")
+            if introtext:
+                updated_fields.append("introtext")
+            if fulltext:
+                updated_fields.append("fulltext" if introtext else "body")
+            if metadesc:
+                updated_fields.append("metadesc")
+            return f"Successfully updated article '{current_title}' (ID: {article_id}) {', '.join(updated_fields)}."
+        else:
+            error_detail = response.text
+            return (
+                f"Failed to update article: HTTP {response.status_code} - {error_detail}. "
+                "This may indicate a server-side issue or insufficient permissions. "
+                "Please verify the bearer token permissions and Joomla server logs."
+            )
+
+    except httpx.HTTPError as e:
+        return f"Error updating article: {str(e)}. Please check network connectivity or Joomla API availability."
+    except Exception as e:
+        return f"Unexpected error: {str(e)}. Please try again or contact support."
 
 
 if __name__ == "__main__":
