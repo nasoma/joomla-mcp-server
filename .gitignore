@@ -13,3 +13,4 @@ wheels/
 .flake8
 readme.2.md
 .DS_Store
+.todo

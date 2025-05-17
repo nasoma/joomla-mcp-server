@@ -361,13 +361,19 @@ async def update_article(
     convert_plain_text: bool = True,
 ) -> str:
     """
-    Update an existing article on the Joomla website via its API. Allows updating the title, introtext, fulltext, and meta description. Provide both introtext and fulltext together for articles with separate introductory and main content, or provide only fulltext for articles where a single body of content is sufficient. Introtext alone is not sufficient and will be ignored unless accompanied by fulltext. Before updating, confirm the article's title and ID are correct.
+    Update an existing article on the Joomla website via its API. Allows updating the title, introtext, fulltext,
+    and meta description. Provide both introtext and fulltext together for articles with separate introductory
+    and main content, or provide only fulltext for articles where a single body of content is sufficient.
+    Introtext alone is not sufficient and will be ignored unless accompanied by fulltext.
+    Before updating, confirm the article's title and ID are correct.
+    Only articles with both introtext and fulltext will be updated.
 
     Args:
         article_id: The ID of the article to update.
         title: Optional new title for the article.
         introtext: Optional introductory text for the article (plain text or HTML). Must be provided with fulltext.
-        fulltext: Optional full content for the article (plain text or HTML). Used as primary content if provided alone, or as main content if provided with introtext.
+        fulltext: Optional full content for the article (plain text or HTML). Used as primary content if provided alone,
+        or as main content if provided with introtext.
         metadesc: Optional meta description for the article.
         convert_plain_text: Whether to auto-convert plain text to HTML for introtext and fulltext (default: True).
 
