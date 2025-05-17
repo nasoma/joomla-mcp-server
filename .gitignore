@@ -15,3 +15,5 @@ readme.2.md
 .DS_Store
 .todo
 readme2.md
+requirements.txt
+runtime.txt
