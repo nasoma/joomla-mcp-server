@@ -1,0 +1,24 @@
+# Smithery configuration file: https://smithery.ai/docs/build/project-config
+
+startCommand:
+  type: stdio
+  commandFunction:
+    # A JS function that produces the CLI command based on the given config to start the MCP on stdio.
+    |-
+    (config) => ({ command: 'python', args: ['main.py'], env: { JOOMLA_BASE_URL: config.joomlaBaseUrl, BEARER_TOKEN: config.bearerToken } })
+  configSchema:
+    # JSON Schema defining the configuration options for the MCP.
+    type: object
+    required:
+      - joomlaBaseUrl
+      - bearerToken
+    properties:
+      joomlaBaseUrl:
+        type: string
+        description: Base URL of the Joomla website, e.g., https://example.com
+      bearerToken:
+        type: string
+        description: API Bearer token for Joomla Web Services
+  exampleConfig:
+    joomlaBaseUrl: https://myjoomla.site
+    bearerToken: abcdefghijklmnopqrstuvwxyz012345
