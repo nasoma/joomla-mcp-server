@@ -441,5 +441,21 @@ async def update_article(
         return f"Unexpected error: {str(e)}. Please try again or contact support."
 
 
+@mcp.prompt()
+def generate_meta_description(article_id: str) -> str:
+    """
+    Generate meta description of an article given its article ID
+
+    Args:
+        article_id: The ID of the existing article to check and update.
+
+
+    Returns:
+        Result string indicating success or failure.
+    """
+
+    return f"Summarize the contents of the article whose id is {article_id} into a meta description of up to 160 characters."
+
+
 if __name__ == "__main__":
     mcp.run(transport="sse")
