@@ -55,7 +55,7 @@ uv sync
 #### Claude Desktop
 
 Add this to your `claude_desktop_config.json`:
-1. Create an MCP configuration file in your project:
+
 
 ```json
 {
