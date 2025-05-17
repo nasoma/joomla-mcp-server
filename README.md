@@ -1,5 +1,7 @@
 # Joomla MCP Server
 
+[![smithery badge](https://smithery.ai/badge/@nasoma/joomla-mcp-server)](https://smithery.ai/server/@nasoma/joomla-mcp-server)
+
 ## Table of Contents
 - [Introduction](#introduction)
 - [Features](#features)
@@ -26,6 +28,14 @@ The Joomla MCP (Model Context Protocol) Server enables AI assistants, such as Cl
 
 
 ## Installation
+
+### Installing via Smithery
+
+To install Joomla Articles MCP for Claude Desktop automatically via [Smithery](https://smithery.ai/server/@nasoma/joomla-mcp-server):
+
+```bash
+npx -y @smithery/cli install @nasoma/joomla-mcp-server --client claude
+```
 
 ### Create a Joomla API Token
 
