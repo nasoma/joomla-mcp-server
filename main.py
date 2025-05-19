@@ -6,6 +6,7 @@ from mcp.server.fastmcp import FastMCP
 import markdown
 import bleach
 
+
 mcp = FastMCP("Joomla Articles MCP")
 
 JOOMLA_BASE_URL = os.getenv("JOOMLA_BASE_URL").rstrip("/")
@@ -49,7 +50,10 @@ def convert_text_to_html(text: str) -> str:
     return sanitized_html
 
 
-@mcp.tool()
+@mcp.tool(
+    name="Get Joomla Articles",
+    description="Retrieve all articles from the Joomla website.",
+)
 async def get_joomla_articles() -> str:
     """Retrieve all articles from the Joomla website via its API."""
     try:
@@ -73,7 +77,10 @@ async def get_joomla_articles() -> str:
         return f"Unexpected error: {str(e)}"
 
 
-@mcp.tool()
+@mcp.tool(
+    name="Get Joomla Categories",
+    description="Retrieve all categories from the Joomla website.",
+)
 async def get_joomla_categories() -> str:
     """Retrieve all categories from the Joomla website via its API."""
     try:
@@ -114,7 +121,9 @@ async def get_joomla_categories() -> str:
         return f"Unexpected error: {str(e)}"
 
 
-@mcp.tool()
+@mcp.tool(
+    name="Create Article", description="Create a new article on the Joomla website."
+)
 async def create_article(
     article_text: str,
     title: str = None,
@@ -213,7 +222,10 @@ async def create_article(
         return f"Unexpected error: {str(e)}"
 
 
-@mcp.tool()
+@mcp.tool(
+    name="Manage Article's state",
+    description="Manage the state of an existing article on the Joomla website (published, unpublished, archived, trashed).",
+)
 async def manage_article_state(article_id: int, target_state: int) -> str:
     """
     Manage the state of an existing article on the Joomla website via its API. Updates the article to the
@@ -282,7 +294,9 @@ async def manage_article_state(article_id: int, target_state: int) -> str:
         return f"Unexpected error: {str(e)}"
 
 
-@mcp.tool()
+@mcp.tool(
+    name="Delete Article", description="Delete an article from the Joomla website."
+)
 async def delete_article(article_id: int) -> str:
     """
     Delete an article from the Joomla website via its API. Verifies article existence and state before deletion.
@@ -348,7 +362,10 @@ async def delete_article(article_id: int) -> str:
         return f"Unexpected error: {str(e)}. Please try again or contact support."
 
 
-@mcp.tool()
+@mcp.tool(
+    name="Update Article",
+    description="Update an existing article on the Joomla website.",
+)
 async def update_article(
     article_id: int,
     title: str = None,
