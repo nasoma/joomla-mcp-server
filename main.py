@@ -24,9 +24,16 @@ def generate_alias(title: str) -> str:
 
 
 def convert_text_to_html(text: str) -> str:
-    """Convert plain text to sanitized HTML using markdown and bleach."""
-    html = markdown.markdown(text)
+    """
+    Convert plain text to sanitized HTML using markdown and bleach.
 
+    Args:
+        text (str): The plain text to convert.
+
+    Returns:
+        str: Sanitized HTML content with allowed tags only.
+    """
+    html = markdown.markdown(text)
     allowed_tags = [
         "p",
         "br",
@@ -43,7 +50,6 @@ def convert_text_to_html(text: str) -> str:
         "h6",
     ]
     allowed_attributes = {}
-
     sanitized_html = bleach.clean(
         html, tags=allowed_tags, attributes=allowed_attributes, strip=True
     )
@@ -62,15 +68,12 @@ async def get_joomla_articles() -> str:
             "User-Agent": "JoomlaArticlesMCP/1.0",
             "Authorization": f"Bearer {BEARER_TOKEN}",
         }
-
         async with httpx.AsyncClient() as client:
             response = await client.get(JOOMLA_ARTICLES_API_URL, headers=headers)
-
         if response.status_code == 200:
             return response.text
         else:
             return f"Failed to fetch articles: HTTP {response.status_code} - {response.text}"
-
     except httpx.HTTPError as e:
         return f"Error fetching articles: {str(e)}"
     except Exception as e:
@@ -89,13 +92,10 @@ async def get_joomla_categories() -> str:
             "User-Agent": "JoomlaArticlesMCP/1.0",
             "Authorization": f"Bearer {BEARER_TOKEN}",
         }
-
         async with httpx.AsyncClient() as client:
             response = await client.get(JOOMLA_CATEGORIES_API_URL, headers=headers)
-
         if response.status_code != 200:
             return f"Failed to fetch categories: HTTP {response.status_code} - {response.text}"
-
         try:
             data = json.loads(response.text)
             categories = data.get("data", [])
@@ -103,7 +103,6 @@ async def get_joomla_categories() -> str:
                 return f"Error: Expected a list of categories, got {type(categories).__name__}: {response.text}"
             if not categories:
                 return "No categories found."
-
             result = "Available categories:\n"
             for category in categories:
                 attributes = category.get("attributes", {})
@@ -111,10 +110,8 @@ async def get_joomla_categories() -> str:
                 category_title = attributes.get("title", "N/A")
                 result += f"- ID: {category_id}, Title: {category_title}\n"
             return result
-
         except json.JSONDecodeError:
             return f"Error parsing categories response: Invalid JSON - {response.text}"
-
     except httpx.HTTPError as e:
         return f"Error fetching categories: {str(e)}"
     except Exception as e:
@@ -136,19 +133,18 @@ async def create_article(
     category, and publication status.
 
     Args:
-        article_text: The content of the article (plain text or HTML).
-        title: Optional title (inferred from content if missing).
-        category_id: Required category ID (lists categories if missing).
-        convert_plain_text: Whether to auto-convert plain text to HTML (default: True).
-        published: Whether the article should be published (True for state=1, False for state=0, default: True).
+        article_text (str): The content of the article (plain text or HTML).
+        title (str, optional): The article title. Inferred from content if not provided.
+        category_id (int, optional): The ID of the category. If not provided, lists available categories.
+        convert_plain_text (bool): Convert plain text to HTML if True. Defaults to True.
+        published (bool): Publish the article (True for state=1, False for state=0). Defaults to True.
 
     Returns:
-        Result string indicating success or failure.
+        Success message with article title and category ID, or an error message if the request fails.
     """
     try:
         if convert_plain_text:
             article_text = convert_text_to_html(article_text)
-
         if not title:
             title = (
                 article_text[:50].strip() + "..."
@@ -156,29 +152,22 @@ async def create_article(
                 else article_text
             )
             title = title.replace("\n", " ").strip()
-
         alias = generate_alias(title)
-
         if category_id is None:
             categories_display = await get_joomla_categories()
             return f"{categories_display}\nPlease specify a category ID."
-
         if not isinstance(category_id, int):
             return "Error: Category ID must be an integer."
-
         headers = {
             "Accept": "application/vnd.api+json",
             "Content-Type": "application/json",
             "User-Agent": "JoomlaArticlesMCP/1.0",
             "Authorization": f"Bearer {BEARER_TOKEN}",
         }
-
         async with httpx.AsyncClient() as client:
             response = await client.get(JOOMLA_CATEGORIES_API_URL, headers=headers)
-
         if response.status_code != 200:
             return f"Failed to fetch categories: HTTP {response.status_code} - {response.text}"
-
         try:
             data = json.loads(response.text)
             categories = data.get("data", [])
@@ -186,14 +175,12 @@ async def create_article(
                 return "Failed to create article: No valid categories found."
         except json.JSONDecodeError:
             return f"Failed to create article: Invalid category JSON - {response.text}"
-
         valid_category = any(
             category.get("attributes", {}).get("id") == category_id
             for category in categories
         )
         if not valid_category:
             return f"Error: Category ID {category_id} is not valid."
-
         payload = {
             "alias": alias,
             "articletext": article_text,
@@ -204,18 +191,15 @@ async def create_article(
             "title": title,
             "state": 1 if published else 0,
         }
-
         async with httpx.AsyncClient() as client:
             response = await client.post(
                 JOOMLA_ARTICLES_API_URL, json=payload, headers=headers
             )
-
         if response.status_code in (200, 201):
             status = "published" if published else "unpublished"
             return f"Successfully created {status} article '{title}' in category ID {category_id}"
         else:
             return f"Failed to create article: HTTP {response.status_code} - {response.text}"
-
     except httpx.HTTPError as e:
         return f"Error creating article: {str(e)}"
     except Exception as e:
@@ -232,35 +216,30 @@ async def manage_article_state(article_id: int, target_state: int) -> str:
     user-specified state (published=1, unpublished=0, archived=2, trashed=-2) if it differs from the current state.
 
     Args:
-        article_id: The ID of the existing article to check and update.
+        article_id(int): The ID of the existing article to check and update.
         target_state: The desired state for the article (1=published, 0=unpublished, 2=archived, -2=trashed).
 
     Returns:
-        Result string indicating success or failure.
+        Success message with article title, ID, and state change, or an error message if the request fails.
     """
     try:
         if not isinstance(article_id, int):
             return "Error: Article ID must be an integer."
-
         valid_states = {1, 0, 2, -2}
         if target_state not in valid_states:
             return f"Error: Invalid target state {target_state}. Valid states are 1 (published), 0 (unpublished), 2 (archived), -2 (trashed)."
-
         headers = {
             "Accept": "application/vnd.api+json",
             "Content-Type": "application/json",
             "User-Agent": "JoomlaArticlesMCP/1.0",
             "Authorization": f"Bearer {BEARER_TOKEN}",
         }
-
         async with httpx.AsyncClient() as client:
             response = await client.get(
                 f"{JOOMLA_ARTICLES_API_URL}/{article_id}", headers=headers
             )
-
         if response.status_code != 200:
             return f"Failed to fetch article: HTTP {response.status_code} - {response.text}"
-
         try:
             data = json.loads(response.text)
             article_data = data.get("data", {}).get("attributes", {})
@@ -268,41 +247,43 @@ async def manage_article_state(article_id: int, target_state: int) -> str:
             title = article_data.get("title", "Unknown")
         except json.JSONDecodeError:
             return f"Failed to parse article data: Invalid JSON - {response.text}"
-
         state_map = {1: "published", 0: "unpublished", 2: "archived", -2: "trashed"}
         current_state_name = state_map.get(current_state, "unknown")
         target_state_name = state_map.get(target_state, "unknown")
-
         if current_state == target_state:
             return f"Article '{title}' (ID: {article_id}) is already in {current_state_name} state."
-
         payload = {"state": target_state}
-
         async with httpx.AsyncClient() as client:
             response = await client.patch(
                 f"{JOOMLA_ARTICLES_API_URL}/{article_id}", json=payload, headers=headers
             )
-
         if response.status_code in (200, 204):
             return f"Successfully updated article '{title}' (ID: {article_id}) from {current_state_name} to {target_state_name} state."
         else:
             return f"Failed to update article state: HTTP {response.status_code} - {response.text}"
-
     except httpx.HTTPError as e:
         return f"Error updating article state: {str(e)}"
     except Exception as e:
         return f"Unexpected error: {str(e)}"
 
 
+# A delete endpoint is available, but during testing, there was a possibility of deleting the wrong article.
+# A better implementation is to change the article's state to "trashed", allowing for recovery in the event of accidental deletion.
+
+
 @mcp.tool(
-    name="Delete Article", description="Delete an article from the Joomla website."
+    name="Delete an article",
+    description="Delete an article by moving to the trashed state on the Joomla website, allowing recovery.",
 )
-async def delete_article(article_id: int) -> str:
+async def move_article_to_trash(article_id: int, expected_title: str = None) -> str:
     """
-    Delete an article from the Joomla website via its API. Verifies article existence and state before deletion.
+    Delete an article by moving it to the trashed state (-2) on the Joomla website via its API.
+    Verifies article existence and optionally checks the title to prevent moving the wrong article.
+    The article remains in the database for potential recovery.
 
     Args:
-        article_id: The ID of the article to delete.
+        article_id(int): The ID of the article to move to trash.
+        expected_title: Optional title to verify the correct article (case-insensitive partial match).
 
     Returns:
         Result string indicating success or failure.
@@ -310,24 +291,20 @@ async def delete_article(article_id: int) -> str:
     try:
         if not isinstance(article_id, int):
             return "Error: Article ID must be an integer."
-
         headers = {
             "Accept": "application/vnd.api+json",
             "Content-Type": "application/json",
             "User-Agent": "JoomlaArticlesMCP/1.0",
             "Authorization": f"Bearer {BEARER_TOKEN}",
         }
-
         async with httpx.AsyncClient() as client:
             response = await client.get(
                 f"{JOOMLA_ARTICLES_API_URL}/{article_id}", headers=headers
             )
-
         if response.status_code != 200:
             return (
                 f"Failed to find article: HTTP {response.status_code} - {response.text}"
             )
-
         try:
             data = json.loads(response.text)
             article_data = data.get("data", {}).get("attributes", {})
@@ -335,29 +312,14 @@ async def delete_article(article_id: int) -> str:
             current_state = article_data.get("state", 0)
         except json.JSONDecodeError:
             return f"Failed to parse article data: Invalid JSON - {response.text}"
-
-        if current_state != -2:
-            trash_result = await manage_article_state(article_id, -2)
-            if "Successfully updated" not in trash_result:
-                return f"Failed to move article to trashed state before deletion: {trash_result}"
-
-        async with httpx.AsyncClient() as client:
-            response = await client.delete(
-                f"{JOOMLA_ARTICLES_API_URL}/{article_id}", headers=headers
-            )
-
-        if response.status_code in (200, 204):
-            return f"Successfully deleted article '{title}' (ID: {article_id})."
-        else:
-            error_detail = response.text
-            return (
-                f"Failed to delete article: HTTP {response.status_code} - {error_detail}. "
-                "This may indicate a server-side issue or insufficient permissions. "
-                "Please verify the bearer token permissions and Joomla server logs."
-            )
-
+        if expected_title:
+            if not title.lower().find(expected_title.lower()) >= 0:
+                return f"Error: Article ID {article_id} has title '{title}', which does not match expected title '{expected_title}'."
+        if current_state == -2:
+            return f"Article '{title}' (ID: {article_id}) is already in trashed state."
+        return await manage_article_state(article_id, -2)
     except httpx.HTTPError as e:
-        return f"Error deleting article: {str(e)}. Please check network connectivity or Joomla API availability."
+        return f"Error moving article to trash: {str(e)}. Please check network connectivity or Joomla API availability."
     except Exception as e:
         return f"Unexpected error: {str(e)}. Please try again or contact support."
 
@@ -383,9 +345,9 @@ async def update_article(
     Only articles with both introtext and fulltext will be updated.
 
     Args:
-        article_id: The ID of the article to update. Don't prompt user for article_id, infer it by running the get_joomla_articles tool.
-        title: Optional new title for the article.
-        introtext: Optional introductory text for the article (plain text or HTML). Must be provided with fulltext.
+        article_id(int): The ID of the article to update. Don't prompt user for article_id, infer it by running the get_joomla_articles tool.
+        title (str, optional): New title for the article.
+        introtext (str, optional): Introductory text (requires fulltext if provided).
         fulltext: Optional full content for the article (plain text or HTML). Used as primary content if provided alone,
         or as main content if provided with introtext.
         metadesc: Optional meta description for the article.
@@ -397,34 +359,28 @@ async def update_article(
     try:
         if not isinstance(article_id, int):
             return "Error: Article ID must be an integer."
-
         if not any([title, introtext, fulltext, metadesc]):
             return "Error: At least one of title, introtext, fulltext, or metadesc must be provided."
-
         headers = {
             "Accept": "application/vnd.api+json",
             "Content-Type": "application/json",
             "User-Agent": "JoomlaArticlesMCP/1.0",
             "Authorization": f"Bearer {BEARER_TOKEN}",
         }
-
         async with httpx.AsyncClient() as client:
             response = await client.get(
                 f"{JOOMLA_ARTICLES_API_URL}/{article_id}", headers=headers
             )
-
         if response.status_code != 200:
             return (
                 f"Failed to find article: HTTP {response.status_code} - {response.text}"
             )
-
         try:
             data = json.loads(response.text)
             article_data = data.get("data", {}).get("attributes", {})
             current_title = article_data.get("title", "Unknown")
         except json.JSONDecodeError:
             return f"Failed to parse article data: Invalid JSON - {response.text}"
-
         payload = {}
         if title:
             payload["title"] = title
@@ -443,12 +399,10 @@ async def update_article(
             payload["articletext"] = (
                 convert_text_to_html(fulltext) if convert_plain_text else fulltext
             )
-
         async with httpx.AsyncClient() as client:
             response = await client.patch(
                 f"{JOOMLA_ARTICLES_API_URL}/{article_id}", json=payload, headers=headers
             )
-
         if response.status_code in (200, 204):
             updated_fields = []
             if title:
@@ -462,12 +416,7 @@ async def update_article(
             return f"Successfully updated article '{current_title}' (ID: {article_id}) {', '.join(updated_fields)}."
         else:
             error_detail = response.text
-            return (
-                f"Failed to update article: HTTP {response.status_code} - {error_detail}. "
-                "This may indicate a server-side issue or insufficient permissions. "
-                "Please verify the bearer token permissions and Joomla server logs."
-            )
-
+            return f"Failed to update article: HTTP {response.status_code} - {error_detail}. This may indicate a server-side issue or insufficient permissions. Please verify the bearer token permissions and Joomla server logs."
     except httpx.HTTPError as e:
         return f"Error updating article: {str(e)}. Please check network connectivity or Joomla API availability."
     except Exception as e:
