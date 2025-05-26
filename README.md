@@ -43,7 +43,7 @@ The Joomla MCP (Model Context Protocol) Server enables AI assistants, such as Cl
 1. Clone the repository:
 ```
 
-git clone https://github.com/nasoma/joomla-mcp-sever.git
+git clone https://github.com/nasoma/joomla-mcp-server.git
 cd joomla-mcp-server
 
 ```
