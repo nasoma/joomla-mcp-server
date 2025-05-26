@@ -56,10 +56,7 @@ def convert_text_to_html(text: str) -> str:
     return sanitized_html
 
 
-@mcp.tool(
-    name="Get Joomla Articles",
-    description="Retrieve all articles from the Joomla website.",
-)
+@mcp.tool(description="Retrieve all articles from the Joomla website.")
 async def get_joomla_articles() -> str:
     """Retrieve all articles from the Joomla website via its API."""
     try:
@@ -80,10 +77,7 @@ async def get_joomla_articles() -> str:
         return f"Unexpected error: {str(e)}"
 
 
-@mcp.tool(
-    name="Get Joomla Categories",
-    description="Retrieve all categories from the Joomla website.",
-)
+@mcp.tool(description="Retrieve all categories from the Joomla website.")
 async def get_joomla_categories() -> str:
     """Retrieve all categories from the Joomla website via its API."""
     try:
@@ -118,9 +112,7 @@ async def get_joomla_categories() -> str:
         return f"Unexpected error: {str(e)}"
 
 
-@mcp.tool(
-    name="Create Article", description="Create a new article on the Joomla website."
-)
+@mcp.tool(description="Create a new article on the Joomla website.")
 async def create_article(
     article_text: str,
     title: str = None,
@@ -207,8 +199,7 @@ async def create_article(
 
 
 @mcp.tool(
-    name="Manage Article's state",
-    description="Manage the state of an existing article on the Joomla website (published, unpublished, archived, trashed).",
+    description="Manage the state of an existing article on the Joomla website (published, unpublished, archived, trashed)"
 )
 async def manage_article_state(article_id: int, target_state: int) -> str:
     """
@@ -272,8 +263,7 @@ async def manage_article_state(article_id: int, target_state: int) -> str:
 
 
 @mcp.tool(
-    name="Delete an article",
-    description="Delete an article by moving to the trashed state on the Joomla website, allowing recovery.",
+    description="Delete an article by moving to the trashed state on the Joomla website, allowing recovery."
 )
 async def move_article_to_trash(article_id: int, expected_title: str = None) -> str:
     """
@@ -324,10 +314,7 @@ async def move_article_to_trash(article_id: int, expected_title: str = None) -> 
         return f"Unexpected error: {str(e)}. Please try again or contact support."
 
 
-@mcp.tool(
-    name="Update Article",
-    description="Update an existing article on the Joomla website.",
-)
+@mcp.tool(description="Update an existing article on the Joomla website.")
 async def update_article(
     article_id: int,
     title: str = None,
