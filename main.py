@@ -56,10 +56,7 @@ def convert_text_to_html(text: str) -> str:
     return sanitized_html
 
 
-@mcp.tool(
-    name="Get Joomla Articles",
-    description="Retrieve all articles from the Joomla website.",
-)
+@mcp.tool(description="Retrieve all articles from the Joomla website.")
 async def get_joomla_articles() -> str:
     """Retrieve all articles from the Joomla website via its API."""
     try:
