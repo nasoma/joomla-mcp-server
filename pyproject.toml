@@ -8,6 +8,6 @@ dependencies = [
     "black>=25.1.0",
     "bleach>=6.2.0",
     "httpx>=0.28.1",
-    "markdown>=3.8",
-    "mcp[cli]>=1.9.1",
+    "markdown>=3.8.2",
+    "mcp[cli]>=1.10.1",
 ]
