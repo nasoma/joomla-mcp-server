@@ -1,7 +1,6 @@
-
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/nasoma-joomla-mcp-server-badge.png)](https://mseep.ai/app/nasoma-joomla-mcp-server)
 
 # Joomla MCP Server
-[![MCP Badge](https://lobehub.com/badge/mcp/nasoma-joomla-mcp-server?style=plastic)](https://lobehub.com/mcp/nasoma-joomla-mcp-server)
 [![smithery badge](https://smithery.ai/badge/@nasoma/joomla-mcp-server)](https://smithery.ai/server/@nasoma/joomla-mcp-server)
 [![MseeP.ai Security Assessment Badge](https://mseep.net/pr/nasoma-joomla-mcp-server-badge.png)](https://mseep.ai/app/nasoma-joomla-mcp-server)
 
