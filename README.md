@@ -1,7 +1,11 @@
-# Joomla MCP Server
-
 [![MseeP.ai Security Assessment Badge](https://mseep.net/pr/nasoma-joomla-mcp-server-badge.png)](https://mseep.ai/app/nasoma-joomla-mcp-server)
+
+# Joomla MCP Server
 [![smithery badge](https://smithery.ai/badge/@nasoma/joomla-mcp-server)](https://smithery.ai/server/@nasoma/joomla-mcp-server)
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/nasoma-joomla-mcp-server-badge.png)](https://mseep.ai/app/nasoma-joomla-mcp-server)
+
+[![Verified on MseeP](https://mseep.ai/badge.svg)](https://mseep.ai/app/7a5e4ad1-6f70-4495-94e1-dc3fcc568e65)
+
 
 ## Table of Contents
 - [Introduction](#introduction)
