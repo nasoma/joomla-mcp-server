@@ -4,6 +4,10 @@
 
 [![Verified on MseeP](https://mseep.ai/badge.svg)](https://mseep.ai/app/7a5e4ad1-6f70-4495-94e1-dc3fcc568e65)
 
+<a href="https://glama.ai/mcp/servers/@nasoma/joomla-mcp-server">
+  <img width="380" height="200" src="https://glama.ai/mcp/servers/@nasoma/joomla-mcp-server/badge" alt="Joomla Server MCP server" />
+</a>
+
 
 ## Table of Contents
 - [Introduction](#introduction)
@@ -124,7 +128,7 @@ Deletes an article from the Joomla website via its API.
 - `article_id` (required): The ID of the article to delete
 
 ### 6. update_article()
-Updates an existing article on the Joomla website via its API. Both `introtext` and `fulltext` are required to align with Joomla’s article structure (introtext for the teaser, fulltext for the content after a "Read more" break).
+Updates an existing article on the Joomla website via its API. Both `introtext` and `fulltext` are required to align with Joomla's article structure (introtext for the teaser, fulltext for the content after a "Read more" break).
 
 **Parameters:**
 - `article_id` (required): The ID of the article to update
@@ -144,4 +148,4 @@ Updates an existing article on the Joomla website via its API. Both `introtext` 
 - Ensure your Joomla website uses HTTPS to secure API communications.
 
 ## License
-This project is licensed under the MIT License. 
+This project is licensed under the MIT License.
