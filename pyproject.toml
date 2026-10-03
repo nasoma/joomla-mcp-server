@@ -9,6 +9,7 @@ dependencies = [
     "httpx>=0.28.1",
     "markdown>=3.11",
     "pydantic>=2.13.5,<3",
+    "pillow>=12",
     "mcp>=2.3.0,<3",
 ]
 

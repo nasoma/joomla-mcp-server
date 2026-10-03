@@ -6,7 +6,7 @@ import sys
 from mcp.server.mcpserver import MCPServer
 from .config import Settings
 from .client import JoomlaClient
-from . import articles, taxonomy, fields, layout
+from . import articles, taxonomy, fields, layout, media
 
 
 def create_server(settings: Settings, client: JoomlaClient | None = None) -> MCPServer:
@@ -26,6 +26,7 @@ def create_server(settings: Settings, client: JoomlaClient | None = None) -> MCP
     taxonomy.register(server, api)
     fields.register(server, api)
     layout.register(server, api)
+    media.register(server, api)
     return server
 
 
