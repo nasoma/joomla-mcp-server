@@ -132,3 +132,57 @@ async def test_read_only_no_request():
         assert not calls
     finally:
         await client.close()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("as_list", [True, False])
+async def test_joomla_json_errors_and_redaction(as_list):
+    error = {
+        "title": "Save failed",
+        "detail": "Invalid field. dummy-test-token Bearer other-token password=private /home/user/site/file.php https://private.invalid",
+        "trace": "private stack trace",
+    }
+    calls = []
+
+    def handler(request):
+        calls.append(request.method)
+        return httpx.Response(500, json={"errors": [error] if as_list else error})
+
+    client = JoomlaClient(Settings.from_env(ENV), httpx.MockTransport(handler))
+    try:
+        with pytest.raises(ToolError) as exc:
+            await client.request("PATCH", "content/articles/85", payload={"state": 1})
+        message = str(exc.value)
+        assert "Save failed" in message and "Invalid field" in message
+        assert "read the resource before retrying" in message
+        for secret in (
+            "dummy-test-token",
+            "other-token",
+            "private",
+            "/home/user",
+            "stack trace",
+        ):
+            assert secret not in message
+        assert calls == ["PATCH"]
+    finally:
+        await client.close()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "body",
+    [b"<html>private error page</html>", b"{bad", b"x" * 17000, b'{"errors":null}'],
+)
+async def test_error_details_fallback(body):
+    client = JoomlaClient(
+        Settings.from_env(ENV),
+        httpx.MockTransport(lambda r: httpx.Response(500, content=body)),
+    )
+    try:
+        with pytest.raises(ToolError) as exc:
+            await client.request("GET", "content/articles/85")
+        assert "Joomla HTTP 500" in str(exc.value)
+        assert "Joomla reports:" not in str(exc.value)
+        assert "private" not in str(exc.value)
+    finally:
+        await client.close()

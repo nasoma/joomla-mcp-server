@@ -257,6 +257,7 @@ and enable the matching Joomla Web Services plugins for other tool families.
 | No Joomla API Token tab or a blank token | Enable User - Joomla API Token, include the account's group in Allowed User Groups, sign in as that account, save and reopen its profile. |
 | HTTP 401 | Check API Authentication - Web Services Joomla Token, the copied token and its Active setting. If the token was reset, update `.env` and restart the client. |
 | HTTP 403 | Check the account's Web Services Login permission, group eligibility and the component/category permissions for the requested operation. |
+| HTTP 500 | The tool includes Joomla JSON error titles/details when available, with credentials and paths redacted. Read the article before retrying a failed write because it may already have saved. If Joomla only reports an internal server error, ask your host for the matching PHP error-log entry; local MCP stderr only shows the HTTP status. |
 | HTTP 404 | Check the site root/subfolder URL and the matching Web Services plugin. The host must route `/api/index.php/v1/...` to Joomla rather than block it. |
 | Network failure or timeout | Check that your computer can reach the site's HTTPS URL and that the host/firewall permits API requests. |
 | Invalid Joomla response / expected JSON | A login page, hosting error or firewall challenge may have been returned instead of API JSON. Check the API route with your host. |

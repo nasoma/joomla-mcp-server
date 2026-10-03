@@ -55,6 +55,52 @@ class JoomlaClient:
         if self.settings.read_only:
             raise ToolError("Writes are disabled by JOOMLA_READ_ONLY.")
 
+    async def _error_detail(self, response: httpx.Response) -> str:
+        """Expose bounded JSON:API messages, never HTML pages or response headers."""
+        body = bytearray()
+        try:
+            async for chunk in response.aiter_bytes():
+                body.extend(chunk)
+                if len(body) > min(self.settings.max_response_bytes, 16_384):
+                    return ""
+            document = json.loads(body)
+        except ValueError, UnicodeDecodeError, httpx.HTTPError:
+            return ""
+        if not isinstance(document, dict):
+            return ""
+        errors = document.get("errors")
+        if isinstance(errors, dict):
+            errors = [errors]
+        if not isinstance(errors, list):
+            return ""
+        messages = []
+        for error in errors[:3]:
+            if not isinstance(error, dict):
+                continue
+            for key in ("title", "detail"):
+                message = error.get(key)
+                if not isinstance(message, str):
+                    continue
+                # Redact before truncating so a partial credential cannot escape.
+                message = message.replace(
+                    self.settings.token.get_secret_value(), "[redacted]"
+                )
+                message = re.sub(
+                    r"(?i)\bBearer\s+[^\s,;]+", "Bearer [redacted]", message
+                )
+                message = re.sub(
+                    r"(?i)\b(token|password|secret|api[_-]?key|authorization)\b\s*[:=]\s*[^\s,;]+",
+                    r"\1=[redacted]",
+                    message,
+                )
+                message = re.sub(r"https?://[^\s<>]+", "[URL]", message)
+                message = re.sub(r"(?:[A-Za-z]:[\\/]|/)[^\s<>]+", "[path]", message)
+                message = re.sub(r"<[^>]*>", "", message)
+                message = " ".join(message.split())[:400]
+                if message and message not in messages:
+                    messages.append(message)
+        return "; ".join(messages)[:800]
+
     def _delay(self, retry_after: str | None, attempt: int) -> float | None:
         if not retry_after:
             return min(0.25 * 2**attempt, 2)
@@ -121,9 +167,13 @@ class JoomlaClient:
                             412: "Resource changed; read it again.",
                             429: "Rate limited; try later.",
                         }
-                        raise ToolError(
-                            f"Joomla HTTP {status}. {hints.get(status, 'API request failed; check server logs.')}"
-                        )
+                        detail = await self._error_detail(response)
+                        message = f"Joomla HTTP {status}. {hints.get(status, 'API request failed; check server logs.')}"
+                        if detail:
+                            message += f" Joomla reports: {detail}"
+                        if method != "GET" and status >= 500:
+                            message += " Write outcome may be unknown; read the resource before retrying."
+                        raise ToolError(message)
                     if status == 204:
                         return None, response.headers.get("ETag")
                     body = bytearray()
