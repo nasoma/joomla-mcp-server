@@ -1,69 +1,272 @@
 # Joomla MCP Server
 
-A Python stdio MCP server for Joomla 4/5 Web Services, using MCP SDK 2's `MCPServer`
-(the successor to `FastMCP`). Manage articles, categories, tags, custom fields, media,
-site menus and site modules. User reads are separately enabled and exclude sensitive data.
+Connect an AI assistant to your existing Joomla 4 or 5 website so it can read and manage
+articles, categories, tags and other supported site content.
 
-## Requirements and installation
+You configure **two places**: your Joomla website and the computer running your AI assistant.
+This Python server runs on your computer and calls Joomla's built-in Web Services API over
+HTTPS. You do not install this repository as a Joomla extension or upload it to your web host.
+Your AI app must support **local MCP servers using stdio**; the example below uses Claude Desktop.
 
-- Python 3.14+; `.python-version` and Docker select 3.14.8.
-- [uv](https://docs.astral.sh/uv/) (Docker pins 0.12.22).
-- Joomla 4 or 5 with the appropriate Web Services plugins; media needs Joomla 4.1+.
-- A dedicated API account authorized for the operations you intend to use.
+## Set up your Joomla website
+
+### 1. Enable the required plugins
+
+Sign in to your Joomla Administrator as a Super User. Open **System → Manage → Plugins**
+(or **System → Plugins**, depending on your administrator layout). Search for and enable:
+
+| Plugin | Needed for |
+| --- | --- |
+| **API Authentication - Web Services Joomla Token** | Authenticating API requests with your token |
+| **User - Joomla API Token** | Creating and managing a user's API token |
+| **Web Services - Content** | Articles, content categories and article fields |
+
+Start with these three. If you want additional tools, also enable the corresponding
+**Web Services - Tags**, **Media**, **Menus**, **Modules** or **Users** plugin. Media tools
+require Joomla 4.1 or later. Custom fields also need Joomla's Fields component and field plugins.
+
+### 2. Choose the Joomla account the assistant will use
+
+The API token belongs to a Joomla user. Requests have that user's permissions.
+Use a dedicated account for this connection, rather than your everyday Super User account.
+
+For a dedicated account:
+
+1. Open **Users → Groups → New** and create a group such as `MCP Content Editors`.
+   For a restricted starting point, select **Registered** as the parent group.
+2. Open **System → Global Configuration → Permissions**, select your group, and allow
+   **Web Services Login** (`core.login.api`). Also allow **Administrator Login** so this
+   account can open its own profile and copy its token. Check that the calculated permissions
+   show Allowed; leave Super User access unset.
+3. For article management, open **Content → Articles → Options → Permissions**. Give the
+   group **Access Administration Interface** for the Articles component, then only the
+   actions it needs: **Create** for new articles, **Edit** for updates, and
+   **Edit State** for publishing, unpublishing and trashing. Category permissions can restrict
+   these operations further. Configure other components' permissions only if you use their tools.
+4. Open **Users → Manage → New**, create the dedicated account and assign it to that group.
+   Ensure the account is enabled, activated and not blocked.
+5. Return to **System → Plugins**, open **User - Joomla API Token**, and add this user's
+   group to **Allowed User Groups**, then save. The default commonly allows only Super Users;
+   a newly created account may otherwise have no token tab. Do not clear the group restriction
+   just to make every account eligible.
+
+An explicit Denied permission inherited from another group/category cannot be fixed by
+allowing it in a child group. Ask your Joomla administrator to check the calculated permissions
+if access is still denied. Creating an API token does not grant additional permissions.
+
+### 3. Copy that account's API token
+
+Sign in to Joomla **as the account whose token you will use**. Open your own profile
+using the user menu in the top-right of Administrator (**Edit Account** or **Profile**,
+depending on the version), and select
+**Joomla API Token**.
+
+- If Joomla says the account has no token yet, save the profile, then reopen it.
+- Set **Active** to **Yes** if that control is shown, and save.
+- Copy the value in **Token**. This is what you will put in `BEARER_TOKEN` below.
+- **Reset → Yes**, followed by saving, replaces the token and invalidates the old one.
+
+You can only view your own token. Editing another user's account as a Super User does not
+let you copy their token. If the tab is missing, check the token plugin and its allowed groups.
+See Joomla's [token plugin settings](https://github.com/joomla/joomla-cms/blob/5.4.0/plugins/user/token/token.xml)
+and [profile controls](https://github.com/joomla/joomla-cms/blob/5.4.0/plugins/user/token/forms/token.xml).
+
+## Set up the server on your computer
+
+### 4. Install Git and uv, then download this repository
+
+Use the computer on which your MCP-compatible AI app runs. Install
+[Git](https://git-scm.com/downloads) if `git --version` does not work.
+
+Install [uv](https://docs.astral.sh/uv/getting-started/installation/), which will manage Python
+and this server's dependencies. On macOS/Linux:
 
 ```sh
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+On Windows, use PowerShell:
+
+```powershell
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+```
+
+Reopen your terminal after installation, then run these commands on either platform:
+
+```sh
+uv --version
 git clone https://github.com/nasoma/joomla-mcp-server.git
 cd joomla-mcp-server
+uv python install 3.14.8
 uv sync --locked
+```
+
+If you already cloned this repository, open that folder instead of cloning again.
+`uv sync` creates the local `.venv` and installs the server. You do not need to activate it.
+
+### 5. Put your website URL and token in a local .env file
+
+In the repository folder, copy `.env.example` to `.env`.
+
+macOS/Linux:
+
+```sh
 cp .env.example .env
 ```
 
-Edit `.env` locally with your site URL and token. `.env` and `.env.*` are ignored;
-`.env.example` contains placeholders only. The server itself reads the process environment,
-not `.env` files. To explicitly load your local file:
+Windows PowerShell:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+Open `.env` in a text editor and replace these values:
+
+```dotenv
+JOOMLA_BASE_URL=https://your-joomla-site.com
+BEARER_TOKEN=paste-your-own-joomla-api-token-here
+JOOMLA_VERSION=5
+JOOMLA_READ_ONLY=true
+```
+
+Set `JOOMLA_VERSION=4` if your site uses Joomla 4. Leave the other example settings unchanged
+for the initial connection. Setting `JOOMLA_READ_ONLY=true` lets you first confirm access
+without allowing the assistant to change your website.
+
+Use your site's public HTTPS URL. If Joomla is in a subfolder, include it, for example
+`https://example.com/joomla`. Do not append `/administrator` or `/api/index.php/v1`.
+The server adds the API path itself. Your host/firewall must permit access to that API.
+
+Keep `.env` private. It is ignored by Git; do not share it or replace placeholders in this README
+with a real token. On macOS/Linux, you can restrict access with `chmod 600 .env`.
+The server reads environment variables; `uv` loads this file only when you pass `--env-file`.
+
+### 6. Confirm the server can start
+
+From the repository folder, run:
 
 ```sh
 uv run --locked --env-file .env joomla-mcp
 ```
 
-`uv run --locked main.py` remains available with variables supplied by your MCP client.
-The package also builds an installable `joomla-mcp` console command.
-Missing/invalid configuration produces a concise stderr error and exit code 2.
+A running server normally waits quietly for an MCP client. It does not open a browser,
+print an article list or start a web page. Press **Ctrl+C** to stop this manual run.
+Starting successfully checks local configuration; the first tool request in step 7 checks
+access to your Joomla website.
 
-### Joomla account and plugins
+## Connect your AI assistant
 
-Enable **API Authentication - Web Services Joomla Token** and **User - Joomla API Token**.
-Enable the relevant **Web Services - Content, Tags, Media, Menus, Modules or Users** plugins.
-Enable the Fields component/plugins when using article custom fields.
+### 7. Add the server to Claude Desktop
 
-Use a dedicated account with `core.login.api` and only the Joomla ACL permissions needed
-for your workflows. Generate/copy its API token from the user profile's Joomla API Token tab;
-UI details vary by Joomla version. Avoid a Super User token for routine content tasks.
-Do not put the real token in committed files, examples, shell commands, or logs.
+Install and open **Claude Desktop** on your computer. These settings go in its local
+configuration file, not in a chat message or the Claude website's connector URL field.
+Claude Desktop starts the server for you; you do not need to keep step 6 running.
 
-### MCP client configuration
+First, open a terminal **inside the cloned `joomla-mcp-server` folder** and find the two paths:
 
-Adapt the following to your client's configuration format, replacing placeholders locally:
+| Placeholder in the JSON below | macOS/Linux command | Windows PowerShell command |
+| --- | --- | --- |
+| `{{PATH_TO_UV}}` | `which uv` | `(Get-Command uv).Source` |
+| `{{PATH_TO_PROJECT}}` | `pwd` | `(Get-Location).Path` |
+
+Copy each command's output. For example, `which uv` might return
+`/Users/you/.local/bin/uv`, and `pwd` might return `/Users/you/joomla-mcp-server`.
+Use your own output, including the complete path. Do not use `~` or leave placeholders unchanged.
+
+Open the configuration file:
+
+1. On macOS, choose **Claude → Settings…** from the menu bar. On Windows, open
+   **Settings** in the Claude Desktop app.
+2. Select **Developer → Edit Config**. This opens `claude_desktop_config.json`.
+3. If the file is empty, paste the complete JSON below. If it already contains
+   `mcpServers`, add the **Joomla Articles MCP** entry inside that object and keep
+   your existing servers.
+
+The file lives here if you need to open it manually:
+
+| System | Configuration file |
+| --- | --- |
+| macOS | `~/Library/Application Support/Claude/claude_desktop_config.json` |
+| Windows | `%APPDATA%\Claude\claude_desktop_config.json` |
+
+On macOS, use Finder **Go → Go to Folder…** to open `~/Library/Application Support/Claude`.
+On Windows, press **Win+R**, enter `%APPDATA%\Claude`, and open the file there.
+See the official [Claude Desktop local MCP guide](https://modelcontextprotocol.io/docs/develop/connect-local-servers).
 
 ```json
 {
   "mcpServers": {
     "Joomla Articles MCP": {
-      "command": "/absolute/path/to/uv",
-      "args": ["--directory", "/absolute/path/to/joomla-mcp-server", "run", "--locked", "joomla-mcp"],
-      "env": {
-        "JOOMLA_BASE_URL": "https://example.com",
-        "BEARER_TOKEN": "<supply-token-securely>",
-        "JOOMLA_READ_ONLY": "true"
-      }
+      "command": "{{PATH_TO_UV}}",
+      "args": [
+        "--directory",
+        "{{PATH_TO_PROJECT}}",
+        "run",
+        "--locked",
+        "--env-file",
+        "{{PATH_TO_PROJECT}}/.env",
+        "joomla-mcp"
+      ]
     }
   }
 }
 ```
 
-For local development, HTTP is permitted only for localhost/127.0.0.1/::1 with
-`JOOMLA_ALLOW_LOCAL_HTTP=true`. Supply the Joomla site root, not `/api/index.php/v1`.
-No HTTP port is exposed; keep stdin open for stdio clients.
+Replace `{{PATH_TO_UV}}` with the `uv` path and replace **both** occurrences of
+`{{PATH_TO_PROJECT}}` with the repository path. Keep `/.env` on the second occurrence;
+it points to the file you created in step 5. The JSON must contain no comments.
+
+On Windows, use the full `uv.exe` path. Use forward slashes, such as
+`C:/Users/you/joomla-mcp-server`, or double each backslash in JSON, such as
+`C:\\Users\\you\\joomla-mcp-server`. No token needs to be copied into this JSON;
+`uv` loads it from your local `.env` file.
+
+Save the file, **fully quit Claude Desktop**, then reopen it. In a conversation, open
+**Add files, connectors, and more → Connectors → Manage connectors** and check that
+**Joomla Articles MCP** is available. Then ask:
+
+> Use get_joomla_articles to list the first five articles on my Joomla website. Do not change anything.
+
+Approve the read request if Claude asks. A successful response contains article IDs/titles,
+or an empty list if the account can see no articles. An empty list is different from an API error.
+
+For another MCP app, put the same command and arguments in its **local/stdio server**
+configuration. This server does not provide an HTTP MCP URL for a remote connector.
+
+### 8. Enable content changes when you are ready
+
+After the read request succeeds, change this line in `.env`:
+
+```dotenv
+JOOMLA_READ_ONLY=false
+```
+
+Restart your AI app so it reloads the configuration. The account's Joomla permissions still
+control which changes are possible. New articles default to unpublished drafts. Updates need
+the exact existing title; trash operations also need explicit confirmation. For example:
+
+> Show my content categories, then create an unpublished draft called “MCP setup check” in the category I choose.
+
+Optional features can be enabled later: use `JOOMLA_ENABLE_USERS=true` for filtered user reads,
+and enable the matching Joomla Web Services plugins for other tool families.
+
+## Setup troubleshooting
+
+| What you see | What to check |
+| --- | --- |
+| No Joomla API Token tab or a blank token | Enable User - Joomla API Token, include the account's group in Allowed User Groups, sign in as that account, save and reopen its profile. |
+| HTTP 401 | Check API Authentication - Web Services Joomla Token, the copied token and its Active setting. If the token was reset, update `.env` and restart the client. |
+| HTTP 403 | Check the account's Web Services Login permission, group eligibility and the component/category permissions for the requested operation. |
+| HTTP 404 | Check the site root/subfolder URL and the matching Web Services plugin. The host must route `/api/index.php/v1/...` to Joomla rather than block it. |
+| Network failure or timeout | Check that your computer can reach the site's HTTPS URL and that the host/firewall permits API requests. |
+| Invalid Joomla response / expected JSON | A login page, hosting error or firewall challenge may have been returned instead of API JSON. Check the API route with your host. |
+| Configuration error about URL/token | Confirm `.env` contains both values and the client command includes the correct absolute `--env-file` path. |
+| Server missing from your AI app | Check JSON syntax, absolute paths and `uv --version`; fully restart the app and inspect its MCP error logs. |
+| Server waits silently in the terminal | This is expected for stdio; connect your AI app as described in step 7. |
+| Writes are disabled | Change JOOMLA_READ_ONLY to false in `.env`, then restart the app. |
+
+Joomla's [Web Services guide](https://manual.joomla.org/docs/5.4/general-concepts/webservices/)
+explains the API and account prerequisites. Never post your token when asking for setup help.
 
 ## Tools
 
