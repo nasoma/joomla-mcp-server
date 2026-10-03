@@ -11,3 +11,6 @@ dependencies = [
     "markdown>=3.11",
     "mcp[cli]>=2.3.0,<3",
 ]
+
+[tool.black]
+target-version = ["py314"]
