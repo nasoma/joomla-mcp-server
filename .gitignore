@@ -17,3 +17,8 @@ readme.2.md
 readme2.md
 requirements.txt
 runtime.txt
+
+# Local credentials
+.env
+.env.*
+!.env.example

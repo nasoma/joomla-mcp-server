@@ -29,7 +29,7 @@ The Joomla MCP (Model Context Protocol) Server enables AI assistants, such as Cl
 - Update articles (requires both introtext and fulltext, with a "Read more" break)
 
 ## Requirements
-- Python 3.11+
+- Python 3.14+ (local runtime: 3.14.8)
 - Joomla 4.x or 5.x with the Web Services API plugin enabled
 - API Bearer token for authentication
 
@@ -57,7 +57,7 @@ cd joomla-mcp-server
 2. Set up a virtual environment and install dependencies using `uv` (a Python dependency manager, see [uv documentation](https://github.com/astral-sh/uv)). If uv is installed run:
 
 ```
-uv sync 
+uv sync --locked
 ```
 
 
@@ -149,3 +149,32 @@ Updates an existing article on the Joomla website via its API. Both `introtext` 
 
 ## License
 This project is licensed under the MIT License.
+
+## Dependency compatibility checks
+
+The server uses MCP SDK 2.x (`MCPServer`, formerly `FastMCP`). Python 3.14.8
+is selected in `.python-version` and Docker; the package requires Python 3.14+.
+Install the locked dependencies and run the offline checks:
+
+```sh
+uv sync --locked
+uv run --locked python -m unittest discover -s tests -v
+```
+
+These checks use dummy credentials and mocked HTTP responses for all six tools,
+and initialize a real stdio MCP session. They do not contact a live Joomla site.
+They verify SDK compatibility, not Joomla server behavior.
+
+To start the server, provide `JOOMLA_BASE_URL` and `BEARER_TOKEN` through your
+MCP client's environment and run `uv run --locked main.py`. The current server
+does not automatically load `.env` files. Never commit your API token.
+
+The Docker image installs the same lockfile:
+
+```sh
+docker build -t joomla-mcp .
+docker run --rm -i --env JOOMLA_BASE_URL --env BEARER_TOKEN joomla-mcp
+```
+
+Export those variables securely before running Docker. Stdio transport requires
+`-i`; no HTTP port is exposed.

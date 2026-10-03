@@ -2,12 +2,12 @@ import os
 import httpx
 import json
 import re
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 import markdown
 import bleach
 
 
-mcp = FastMCP("Joomla Articles MCP")
+mcp = MCPServer("Joomla Articles MCP")
 
 JOOMLA_BASE_URL = os.getenv("JOOMLA_BASE_URL").rstrip("/")
 BEARER_TOKEN = os.getenv("BEARER_TOKEN")
