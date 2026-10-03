@@ -1,7 +1,7 @@
 [project]
 name = "joomlamcp"
-version = "0.1.0"
-description = "MCP Server to create articles on a Joomla website"
+version = "0.2.0"
+description = "MCP server for guarded Joomla 4/5 content and site management"
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
@@ -22,3 +22,13 @@ dev = ["black>=26.5.1", "pytest>=8", "pytest-asyncio>=1", "pytest-cov>=6"]
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+
+[project.scripts]
+joomla-mcp = "joomlamcp.server:main"
+
+[build-system]
+requires = ["hatchling==1.32.4"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["joomlamcp"]

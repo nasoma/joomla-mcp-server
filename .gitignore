@@ -22,3 +22,8 @@ runtime.txt
 .env
 .env.*
 !.env.example
+
+# Test output
+.pytest_cache/
+.coverage
+htmlcov/

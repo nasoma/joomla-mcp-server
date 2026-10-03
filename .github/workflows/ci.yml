@@ -1,0 +1,30 @@
+name: Offline checks and Docker smoke
+on:
+  push:
+    branches: [main, improvements]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          version: '0.12.22'
+          enable-cache: true
+      - run: uv sync --locked
+      - run: uv run --locked black --check main.py joomlamcp tests
+      - run: uv run --locked pytest --cov=joomlamcp --cov-fail-under=85
+      - run: uv build
+      - run: uv run --locked python tests/smoke_stdio.py .venv/bin/joomla-mcp
+      - run: docker build -t joomla-mcp-test .
+      - name: Verify non-root image
+        run: test "$(docker run --rm joomla-mcp-test id -u)" = 10001
+      - name: Docker stdio and read-only smoke (dummy credentials only)
+        run: >-
+          uv run --locked python tests/smoke_stdio.py docker run --rm -i
+          --env JOOMLA_BASE_URL --env BEARER_TOKEN --env JOOMLA_READ_ONLY
+          --env JOOMLA_ENABLE_USERS joomla-mcp-test

@@ -1,6 +1,6 @@
-# Phase 3 review — approval required before implementation
+# Phase 3 review and approved implementation
 
-Reviewed 2026-10-03. Items below are proposals, not approved changes.
+Reviewed 2026-10-03. The user subsequently approved every item and explicitly authorized pushing to main. The implementation is recorded in docs/implementation.md; the original proposals below remain as review history.
 
 ## Baseline and Phase 2
 
@@ -47,4 +47,4 @@ Joomla's [Web Services documentation](https://manual.joomla.org/docs/next/genera
 
 ## Suggested first approval batch
 
-A1, A2, A3, A4, A8, A9 and A13 establish reliable configuration, correct updates, bounded retrieval, robust parsing, meaningful tests and accurate instructions. Approve A5/A6/A7 separately with explicit decisions about return-format compatibility, trusted HTML, and publishing/confirmation defaults. Implement approved items in separate commits with tests/docs, then push improvements; do not push main or exercise live mutations.
+A1, A2, A3, A4, A8, A9 and A13 establish reliable configuration, correct updates, bounded retrieval, robust parsing, meaningful tests and accurate instructions. Approve A5/A6/A7 separately with explicit decisions about return-format compatibility, trusted HTML, and publishing/confirmation defaults. Implement approved items in separate commits with tests/docs, then push the authorized target branch. The subsequent user instruction explicitly authorizes main; live mutations remain prohibited.

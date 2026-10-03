@@ -1,24 +1,49 @@
-# Smithery configuration file: https://smithery.ai/docs/build/project-config
-
+# Stdio deployment contract; runtime validates configuration independently.
 startCommand:
   type: stdio
-  commandFunction:
-    # A JS function that produces the CLI command based on the given config to start the MCP on stdio.
-    |-
-    (config) => ({ command: 'python', args: ['main.py'], env: { JOOMLA_BASE_URL: config.joomlaBaseUrl, BEARER_TOKEN: config.bearerToken } })
+  commandFunction: |-
+    (config) => ({ command: 'joomla-mcp', args: [], env: {
+      JOOMLA_BASE_URL: config.joomlaBaseUrl,
+      BEARER_TOKEN: config.bearerToken,
+      JOOMLA_VERSION: String(config.joomlaVersion ?? '5'),
+      JOOMLA_READ_ONLY: String(config.readOnly ?? false),
+      JOOMLA_ALLOW_TRUSTED_HTML: String(config.allowTrustedHtml ?? false),
+      JOOMLA_ENABLE_USERS: String(config.enableUsers ?? false)
+    } })
   configSchema:
-    # JSON Schema defining the configuration options for the MCP.
     type: object
-    required:
-      - joomlaBaseUrl
-      - bearerToken
+    additionalProperties: false
+    required: [joomlaBaseUrl, bearerToken]
     properties:
       joomlaBaseUrl:
         type: string
-        description: Base URL of the Joomla website, e.g., https://example.com
+        format: uri
+        minLength: 1
+        pattern: '^https://'
+        description: HTTPS Joomla site root, without credentials, query or fragment
       bearerToken:
         type: string
-        description: API Bearer token for Joomla Web Services
+        minLength: 1
+        pattern: '^\S+$'
+        writeOnly: true
+        description: Secret Joomla API token; provide through secure deployment configuration
+      joomlaVersion:
+        type: string
+        enum: ['4', '5']
+        default: '5'
+      readOnly:
+        type: boolean
+        default: false
+        description: Reject all writes before any API request
+      allowTrustedHtml:
+        type: boolean
+        default: false
+        description: Permit explicitly selected trusted_html mode for approved source content
+      enableUsers:
+        type: boolean
+        default: false
+        description: Enable user reads with sensitive attributes excluded
   exampleConfig:
-    joomlaBaseUrl: https://myjoomla.site
-    bearerToken: abcdefghijklmnopqrstuvwxyz012345
+    joomlaBaseUrl: https://example.com
+    bearerToken: replace-with-your-api-token
+    readOnly: true
