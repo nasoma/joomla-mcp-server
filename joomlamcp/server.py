@@ -6,7 +6,7 @@ import sys
 from mcp.server.mcpserver import MCPServer
 from .config import Settings
 from .client import JoomlaClient
-from . import articles
+from . import articles, taxonomy
 
 
 def create_server(settings: Settings, client: JoomlaClient | None = None) -> MCPServer:
@@ -23,6 +23,7 @@ def create_server(settings: Settings, client: JoomlaClient | None = None) -> MCP
     logging.getLogger("httpx").setLevel(logging.WARNING)
     logging.getLogger("httpcore").setLevel(logging.WARNING)
     articles.register(server, api)
+    taxonomy.register(server, api)
     return server
 
 
