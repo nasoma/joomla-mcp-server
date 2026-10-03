@@ -89,28 +89,6 @@ Success results are structured objects with `ok: true`, normalized `data`, and o
 as integers when calling a tool. Errors are MCP tool errors (`is_error=true`), with safe,
 bounded messages. API bodies, credentials and raw network exceptions are not returned.
 
-## Safety and compatibility changes in 0.2
-
-- New articles/categories/tags/menu items/modules default to drafts. Set `published=true`
-  deliberately when creating public content.
-- Read before writing. Existing-resource writes require exact `expected_title`; article
-  writes can also check `expected_modified`. ETag/If-Match is used when available, but
-  atomic protection depends on the Joomla server enforcing it.
-- Trash needs `confirm=true`. Article deletion is recoverable trash only. Other exposed
-  permanent deletes require confirmation and, where Joomla has state, a previously trashed
-  resource. Menu-container deletion has no trash state and can affect navigation.
-- Omitted/null update fields are unchanged; empty text/meta strings clear fields. Article
-  `introtext` and `fulltext` are independently editable; title changes preserve aliases.
-- `content_mode=markdown` converts and sanitizes; `html` sanitizes supplied HTML.
-  `trusted_html` preserves input only with `JOOMLA_ALLOW_TRUSTED_HTML=true`.
-  Legacy `convert_plain_text=false` now selects sanitized HTML. Styles/events and unsafe
-  URL schemes are removed from sanitized content. Joomla's own filters still apply.
-- List/result formats changed from strings to structured objects. Clients parsing old
-  prose/raw JSON must adapt. Python 3.12/3.13 and MCP SDK 1 are no longer supported.
-- `JOOMLA_READ_ONLY=true` rejects all writes before any HTTP request. Annotations help MCP
-  clients identify reads and destructive actions; they do not replace Joomla ACL or user approval.
-- Users default disabled. Enabling reads exposes only ID/name/username/block; no user writes.
-
 ## Configuration
 
 | Variable | Default | Meaning |
@@ -128,38 +106,6 @@ bounded messages. API bodies, credentials and raw network exceptions are not ret
 
 Boolean values accept true/false or 1/0. Redirects and proxy environment lookup are disabled.
 Read Retry-After values over five seconds return a failure so the caller can reschedule.
-
-## Testing and Docker
-
-```sh
-uv sync --locked
-uv run --locked pytest
-uv run --locked black --check main.py joomlamcp tests
-uv build
-```
-
-Tests use dummy credentials and `httpx.MockTransport`, plus a real subprocess MCP stdio
-handshake. They cover tool registration, request payloads, validation, pagination, API failures,
-content modes, read-only protection, destructive guards and sensitive-field filtering.
-They do not contact a live Joomla site or establish live integration acceptance.
-
-```sh
-docker build -t joomla-mcp .
-docker run --rm -i --env-file .env joomla-mcp
-```
-
-Docker uses a pinned uv installer, locked production dependencies, an installed console command
-and a non-root runtime. Secrets and development artifacts are excluded from the build context.
-GitHub Actions runs tests, builds the package/image and checks stdio discovery/read-only errors.
-
-Detailed contracts and limitations: [architecture](docs/architecture.md), [articles](docs/articles.md),
-[categories/tags](docs/taxonomy.md), [fields](docs/fields.md), [media](docs/media.md),
-[menus/modules](docs/layout.md), [users](docs/users.md).
-
-API contracts were checked against official Joomla 4.4.13 and 5.4.0 source. Plugins, extensions,
-ACL and site-specific validation may differ. Field writes cover text/textarea/integer types;
-module content writes cover mod_custom. Administrator layouts, arbitrary module params,
-media overwrite/delete and user/permission writes are not exposed.
 
 ## License
 
