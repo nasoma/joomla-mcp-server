@@ -3,7 +3,7 @@
 from typing import Annotated, Literal, Any
 from pydantic import BaseModel, Field, ConfigDict
 
-Id = Annotated[int, Field(strict=True, gt=0)]
+Id = Annotated[int, Field(strict=True, gt=0, le=2**63 - 1)]
 Limit = Annotated[int, Field(strict=True, ge=1, le=100)]
 Offset = Annotated[int, Field(strict=True, ge=0, le=1_000_000)]
 Title = Annotated[str, Field(min_length=1, max_length=255, pattern=r"\S")]

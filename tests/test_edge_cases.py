@@ -225,3 +225,28 @@ async def test_lifespan_closes_shared_client(factory):
         await server.call_tool("get_joomla_categories", {})
         assert not api.http.is_closed
     assert api.http.is_closed
+
+
+@pytest.mark.asyncio
+async def test_ambiguous_write_no_retry():
+    calls = []
+
+    def respond(r):
+        calls.append(r)
+        raise httpx.ReadTimeout("private content", request=r)
+
+    api = JoomlaClient(Settings.from_env(ENV), httpx.MockTransport(respond))
+    try:
+        with pytest.raises(ToolError, match="outcome is unknown"):
+            await api.create("content/articles", {})
+        assert len(calls) == 1
+    finally:
+        await api.close()
+
+
+@pytest.mark.parametrize("resource_id", ["²", "1" * 5000, -1, 2**63])
+def test_invalid_upstream_id_safe(resource_id):
+    from joomlamcp.client import parse_resource
+
+    with pytest.raises(ToolError):
+        parse_resource({"id": resource_id, "attributes": {}})

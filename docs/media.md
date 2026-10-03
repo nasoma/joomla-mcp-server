@@ -17,7 +17,7 @@ and reports server_paginated=false. Narrow the directory/search if the response 
 JOOMLA_MAX_RESPONSE_BYTES. Results exclude base64 content and temporary URLs.
 
 update_article_images edits only specified image, alt and caption properties; it retains other
-image metadata. References must be HTTPS URLs or safe relative images/ paths; empty strings
+image metadata. Alt/caption strings are stripped of markup. References must be HTTPS URLs or safe relative images/ paths; empty strings
 clear fields. Exact article title and optional modified timestamp are checked before PATCH.
 
 Contracts were checked against Joomla 4.4.13 and 5.4.0 media plugins/controllers/models/views.

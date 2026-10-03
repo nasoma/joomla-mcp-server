@@ -8,7 +8,8 @@ with an explicit loopback-only HTTP development exception. No `.env` file is loa
 disables redirects/proxy environment lookup and bounds JSON response sizes. GET requests
 retry transient network failures and 429/502/503/504 at most twice. Retry-After seconds or
 HTTP dates are honored up to five seconds; longer waits fail immediately for the caller
-to reschedule. Mutations are never retried. Read-only mode rejects writes before any request.
+to reschedule. Mutations are never retried. A mutation network failure explicitly reports an unknown outcome
+and requires checking the resource before any retry. Read-only mode rejects writes before any request.
 
 JSON:API resources normalize their positive resource ID to a string and preserve attributes.
 Null detail data, invalid shapes and malformed JSON become safe MCP ToolErrors. Raw API bodies

@@ -8,6 +8,7 @@ import re
 from typing import Annotated, Any, Literal
 from urllib.parse import quote, urlsplit
 import warnings
+import bleach
 from PIL import Image, UnidentifiedImageError
 from pydantic import Field
 from mcp.server.mcpserver import MCPServer
@@ -219,6 +220,9 @@ def register(server: MCPServer, client: JoomlaClient) -> None:
         }
         if not updates:
             raise ToolError("Provide at least one image property to update.")
+        for key in updates:
+            if key.endswith(("_alt", "_caption")):
+                updates[key] = bleach.clean(updates[key], tags=[], strip=True)
         for key in ["image_intro", "image_fulltext"]:
             if key in updates:
                 image_reference(updates[key])

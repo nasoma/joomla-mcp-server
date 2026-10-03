@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
 import json
 import logging
+import re
 from typing import Any
 
 import httpx
@@ -23,11 +24,11 @@ def parse_resource(value: Any, etag: str | None = None) -> Resource:
     resource_id = value.get("id", attrs.get("id"))
     if (
         type(resource_id) not in {int, str}
-        or not str(resource_id).isdigit()
-        or int(resource_id) <= 0
+        or not re.fullmatch(r"[0-9]{1,19}", str(resource_id))
+        or not 0 < int(resource_id) <= 2**63 - 1
     ):
         raise ToolError("Invalid Joomla response: missing positive resource ID.")
-    return Resource(id=str(resource_id), attributes=attrs, etag=etag)
+    return Resource(id=str(int(resource_id)), attributes=attrs, etag=etag)
 
 
 class JoomlaClient:
@@ -149,6 +150,8 @@ class JoomlaClient:
                     continue
                 raise ToolError(
                     "Joomla network request failed or timed out; check connectivity."
+                    if method == "GET"
+                    else "Joomla write outcome is unknown after a network failure; verify the resource before retrying."
                 ) from None
         raise ToolError("Joomla read attempts exhausted.")
 
