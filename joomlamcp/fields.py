@@ -4,7 +4,7 @@ from typing import Annotated, Any, Literal
 import json
 import re
 import bleach
-from pydantic import Field
+from pydantic import Field, StrictInt, StrictStr
 from mcp.server.mcpserver import MCPServer
 from mcp.server.mcpserver.exceptions import ToolError
 from .client import JoomlaClient
@@ -220,7 +220,9 @@ def register(server: MCPServer, client: JoomlaClient) -> None:
     async def update_article_fields(
         article_id: Id,
         expected_title: Title,
-        values: Annotated[dict[str, str | int], Field(min_length=1, max_length=50)],
+        values: Annotated[
+            dict[str, StrictStr | StrictInt], Field(min_length=1, max_length=50)
+        ],
         expected_modified: Meta | None = None,
     ) -> dict[str, Any]:
         """Update named text/textarea/integer article fields. Empty string clears text. Unknown/unsupported field names and types are rejected."""

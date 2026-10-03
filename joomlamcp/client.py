@@ -179,7 +179,6 @@ class JoomlaClient:
         links, meta = data.get("links", {}), data.get("meta", {})
         if not isinstance(links, dict) or not isinstance(meta, dict):
             raise ToolError("Invalid Joomla pagination metadata.")
-        total = meta.get("total-pages", meta.get("total"))
         return {
             "ok": True,
             "data": [parse_resource(row).public() for row in rows],

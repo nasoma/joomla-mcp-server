@@ -5,8 +5,8 @@ from joomlamcp.client import JoomlaClient
 from joomlamcp.server import create_server
 
 
-@pytest.fixture
-def factory():
+@pytest.fixture(params=["4", "5"])
+def factory(request):
     clients = []
 
     def make(handler, **env):
@@ -15,6 +15,7 @@ def factory():
                 "JOOMLA_BASE_URL": "https://joomla.invalid",
                 "BEARER_TOKEN": "dummy-test-token",
                 "JOOMLA_READ_RETRIES": "0",
+                "JOOMLA_VERSION": request.param,
                 **env,
             }
         )

@@ -1,6 +1,7 @@
 """Application factory and stdio entry point."""
 
 from contextlib import asynccontextmanager
+from collections.abc import AsyncIterator
 import logging
 import sys
 from mcp.server.mcpserver import MCPServer
@@ -13,7 +14,7 @@ def create_server(settings: Settings, client: JoomlaClient | None = None) -> MCP
     api = client or JoomlaClient(settings)
 
     @asynccontextmanager
-    async def lifespan(server):
+    async def lifespan(server: MCPServer) -> AsyncIterator[JoomlaClient]:
         try:
             yield api
         finally:
