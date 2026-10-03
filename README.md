@@ -250,6 +250,22 @@ the exact existing title; trash operations also need explicit confirmation. For 
 Optional features can be enabled later: use `JOOMLA_ENABLE_USERS=true` for filtered user reads,
 and enable the matching Joomla Web Services plugins for other tool families.
 
+### Choosing an article category
+
+`create_article` and `update_article` accept either `category_id` or `category_name`.
+For example, “Move article 87 to Blog” can use `category_name="Blog"`; the server resolves
+an exact, case-insensitive match to the category ID. It checks all available category pages
+(up to 1,000 categories), so a match on the first page cannot hide a duplicate on a later page.
+
+If no category is supplied when creating an article, no exact name matches, or several
+categories share the name, the server makes no change and tells your assistant to ask
+which category ID to use. Ambiguous results include candidate IDs and parent IDs.
+Supplying both a name and ID requires them to agree. These clarification messages are
+shown through your assistant's chat; the server does not open a client-specific popup.
+
+Publishing an existing article keeps its current category. To publish in another category,
+ask the assistant to move it first, then publish it after the move succeeds.
+
 ## Setup troubleshooting
 
 | What you see | What to check |

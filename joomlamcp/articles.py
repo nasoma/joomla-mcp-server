@@ -1,5 +1,6 @@
 """Article tools; omitted fields stay unchanged, empty strings clear content."""
 
+import json
 from typing import Annotated, Any
 from pydantic import Field
 from mcp.server.mcpserver import MCPServer
@@ -20,6 +21,61 @@ ARTICLES = "content/articles"
 CATEGORIES = "content/categories"
 Tags = Annotated[list[Id], Field(max_length=100)]
 Alias = Annotated[str, Field(min_length=1, max_length=255, pattern=r"^[\w-]+$")]
+
+
+async def resolve_category(
+    client: JoomlaClient, category_id: int | None, category_name: str | None
+) -> int:
+    """Require an ID or an unambiguous exact name; never guess a destination."""
+    if category_id is not None:
+        category = await client.detail(CATEGORIES, category_id)
+        if (
+            category_name is not None
+            and str(category.attributes.get("title", "")).strip().casefold()
+            != category_name.strip().casefold()
+        ):
+            raise ToolError(
+                "category_id and category_name do not match. Ask the user which category ID to use before proceeding."
+            )
+        return category_id
+    if category_name is None:
+        raise ToolError(
+            "A category is required. Use get_joomla_categories, then ask the user which category ID to use before proceeding."
+        )
+    matches = {}
+    offset = 0
+    for _ in range(10):
+        page = await client.listing(CATEGORIES, 100, offset)
+        for category in page["data"]:
+            if (
+                str(category["attributes"].get("title", "")).strip().casefold()
+                == category_name.strip().casefold()
+            ):
+                matches[category["id"]] = category
+        if not page["pagination"]["has_next"]:
+            break
+        offset = page["pagination"]["next_offset"]
+    else:
+        raise ToolError(
+            "Category lookup exceeded 1,000 categories. Ask the user for the exact category ID before proceeding."
+        )
+    if len(matches) == 1:
+        return int(next(iter(matches)))
+    if matches:
+        choices = [
+            {
+                "id": int(item["id"]),
+                "title": item["attributes"].get("title"),
+                "parent_id": item["attributes"].get("parent_id"),
+            }
+            for item in matches.values()
+        ]
+        raise ToolError(
+            f"Category name is ambiguous. Ask the user which category ID to use before proceeding. Matches: {json.dumps(choices, ensure_ascii=False)}"
+        )
+    raise ToolError(
+        "No exact category-name match was found. Use get_joomla_categories and ask the user which category ID to use before proceeding."
+    )
 
 
 def register(server: MCPServer, client: JoomlaClient) -> None:
@@ -96,14 +152,11 @@ def register(server: MCPServer, client: JoomlaClient) -> None:
         content_mode: ContentMode | None = None,
         alias: Alias | None = None,
         tags: Tags | None = None,
+        category_name: Title | None = None,
     ) -> dict[str, Any]:
-        """Create an article draft by default. Specify category_id from categories; returns the new resource ID. Raw HTML is sanitized unless trusted_html is explicitly enabled."""
+        """Create a draft by default. Accept category_id or an exact category_name (e.g. Blog). If missing or ambiguous, ask the user to choose a category ID before retrying; never invent an ID. published=true publishes at creation. Raw HTML is sanitized unless trusted_html is explicitly enabled."""
         client.require_write()
-        if category_id is None:
-            raise ToolError(
-                "category_id is required; use get_joomla_categories to select one."
-            )
-        await client.detail(CATEGORIES, category_id)
+        category_id = await resolve_category(client, category_id, category_name)
         payload = {
             "title": title or infer_title(article_text),
             "articletext": convert_content(
@@ -129,7 +182,7 @@ def register(server: MCPServer, client: JoomlaClient) -> None:
         expected_modified: Meta | None = None,
         confirm: bool = False,
     ) -> dict[str, Any]:
-        """Set state: 1 published, 0 draft, 2 archived, -2 trash. Exact expected_title is required; trash additionally requires confirm=true."""
+        """Set state: 1 published, 0 draft, 2 archived, -2 trash. Publishing keeps the current category; use update_article to move categories first when requested. Exact expected_title is required; trash additionally requires confirm=true."""
         client.require_write()
         valid_state(target_state)
         if target_state == -2:
@@ -171,8 +224,9 @@ def register(server: MCPServer, client: JoomlaClient) -> None:
         tags: Tags | None = None,
         expected_title: Title | None = None,
         expected_modified: Meta | None = None,
+        category_name: Title | None = None,
     ) -> dict[str, Any]:
-        """Update supplied fields only; empty strings clear text/meta. Intro and full text can be edited independently. Title changes preserve alias unless explicitly supplied. Read first and supply exact expected_title."""
+        """Update supplied fields only. To move an article, supply category_id or exact category_name (e.g. Blog). Missing/ambiguous name matches require asking the user to choose a category ID before retrying; never guess. Empty strings clear text/meta. Intro and full text can be edited independently. Read first and supply exact expected_title."""
         client.require_write()
         payload = {
             key: value
@@ -191,10 +245,14 @@ def register(server: MCPServer, client: JoomlaClient) -> None:
                 payload[key] = convert_content(
                     value, mode, client.settings.allow_trusted_html
                 )
-        if not payload:
-            raise ToolError("Provide at least one field to update.")
+        if not payload and category_name is None:
+            raise ToolError(
+                "Provide at least one field to update. For a category move, ask the user for a category name or ID before proceeding."
+            )
         resource = await client.detail(ARTICLES, article_id)
         check_identity(resource, expected_title, expected_modified, required=True)
-        if category_id is not None:
-            await client.detail(CATEGORIES, category_id)
+        if category_id is not None or category_name is not None:
+            payload["catid"] = await resolve_category(
+                client, category_id, category_name
+            )
         return await client.update(ARTICLES, resource, payload)
